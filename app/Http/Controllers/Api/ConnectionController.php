@@ -21,7 +21,7 @@ class ConnectionController extends Controller
             return response()->json($validator->errors(), 422);
         }
         $connection = Connection::create([
-            'profileImage' => $request->file('profileImage')->store(),
+            'profileImage' => $request->file('profileImage')->store('document', 'public'),
             'name' => $request->input('name'),
             'message' => $request->input('message'),
             'socialMedia' => json_encode($request->input('socialMedia')),

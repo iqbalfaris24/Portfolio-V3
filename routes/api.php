@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PortfolioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ProjectController;
@@ -24,7 +25,9 @@ use App\Http\Controllers\Api\ConnectionController;
 // });
 
 
-
+Route::resource('portfolio', PortfolioController::class);
+Route::post('send/contact', [ContactController::class, 'store']);
+Route::post('send/connection', [ConnectionController::class, 'store']);
 Route::middleware('api')->prefix('auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('logout', [AuthController::class, 'logout']);
@@ -33,7 +36,7 @@ Route::middleware('api')->prefix('auth')->group(function () {
 });
 
 
-Route::middleware('api')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::resource('biodata', BiodataController::class);
     Route::resource('project', ProjectController::class);
     Route::resource('contact', ContactController::class);

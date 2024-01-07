@@ -2,36 +2,35 @@
 import { useState, useEffect } from "react";
 import { Tooltip } from "react-tooltip";
 import { Typewriter } from "react-simple-typewriter";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { EffectCards, Autoplay } from "swiper/modules";
 import {
     FiGithub,
     FiGlobe,
-    FiInstagram,
-    FiLinkedin,
-    FiTwitter,
-    FiFacebook,
     FiCode,
     FiCoffee,
     FiRepeat,
     FiArrowUp,
 } from "react-icons/fi";
-import { RiTiktokLine } from "react-icons/ri";
 import photo from "../assets/image/foto.png";
 import vectorProfile from "../assets/image/profileVector.svg";
-import vectorContact from "../assets/image/contactVector.svg";
 import laravel from "../assets/image/laravel.png";
 import react from "../assets/image/react.png";
 import vite from "../assets/image/vite.png";
 import bootstrap from "../assets/image/bootstrap.png";
-import sass from "../assets/image/sass.png";
+import Api from "../contexts/Api";
 import tailwind from "../assets/image/tailwind.png";
 import "swiper/css";
 import "swiper/css/effect-cards";
 import "swiper/element/css/autoplay";
+import Contact from "./portfolio/Contact";
+import ConnectionRefl from "./portfolio/ConnectionRefl";
+import ScaleLoader from "react-spinners/ScaleLoader";
+
 function MainPage() {
-    const [phoneNumber, setPhoneNumber] = useState("");
+    const [biodata, setBiodata] = useState({});
     const [isVisible, setIsVisible] = useState(false);
+    const baseStorageURL = "http://localhost:8000/storage";
+    const [isLoading, setIsLoading] = useState(false);
+
     const handleScroll = () => {
         const scrollY = window.scrollY;
         if (scrollY > 100) {
@@ -40,21 +39,57 @@ function MainPage() {
             setIsVisible(false);
         }
     };
+
     const scrollToTop = () => {
         window.scrollTo({
             top: 0,
             behavior: "smooth",
         });
     };
-    const handleInputChange = (e) => {
-        // Menghapus karakter selain nomor dari input
-        const cleanedValue = e.target.value.replace(/\D/g, "");
-        setPhoneNumber(cleanedValue);
-    };
+
     const scrollToSection = (sectionId) => {
         const section = document.getElementById(sectionId);
         if (section) {
             section.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
+    const fetchPortfolio = async () => {
+        try {
+            const response = await Api.get("/portfolio");
+            setBiodata(response.data);
+        } catch (error) {
+            console.log("Get Some Error: ", error);
+        }
+    };
+
+    const handleDownload = async (data) => {
+        setIsLoading(true);
+
+        try {
+            const response = await Api.get(`portfolio/${data.id}`, {
+                responseType: "blob", // Set responseType to 'blob' to handle binary data (file)
+            });
+
+            // Membuat URL untuk file
+            const fileURL = window.URL.createObjectURL(
+                new Blob([response.data])
+            );
+
+            // Membuat link untuk file dan mengkliknya untuk mengunduh
+            const link = document.createElement("a");
+            link.href = fileURL;
+            link.setAttribute(
+                "download",
+                "Curriculum Vitae - Iqbal Faris Akbar.pdf"
+            );
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error("Error downloading file:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
     useEffect(() => {
@@ -62,6 +97,10 @@ function MainPage() {
         return () => {
             window.removeEventListener("scroll", handleScroll);
         };
+    }, []);
+    // Fetch Data
+    useEffect(() => {
+        fetchPortfolio();
     }, []);
     return (
         <div className="portfolio-page">
@@ -94,17 +133,17 @@ function MainPage() {
                     >
                         Connection Reflections
                     </h3>
-                    <h3
+                    <a
                         className="cursor-pointer border p-2 rounded-xl hover:brightness-75"
-                        onClick={() =>
-                            scrollToSection("connection-reflections")
-                        }
+                        href="https://github.com/iqbalfaris24"
+                        target="_blank"
+                        rel="noreferrer"
                         data-tooltip-id="my-tooltip"
                         data-tooltip-content="My Github"
                         data-tooltip-place="bottom"
                     >
                         <FiGithub className="text-3xl" />
-                    </h3>
+                    </a>
                 </div>
                 <div className="navbar-item-mobile w-full flex md:hidden justify-between my-auto px-4 font-bold text-heading items-center">
                     <h3
@@ -133,14 +172,14 @@ function MainPage() {
                     >
                         Connection Reflections
                     </h3>
-                    <h3
+                    <a
                         className="cursor-pointer border p-2 rounded-xl hover:brightness-75"
-                        onClick={() =>
-                            scrollToSection("connection-reflections")
-                        }
+                        href="https://github.com/iqbalfaris24"
+                        target="_blank"
+                        rel="noreferrer"
                     >
                         <FiGithub className="text-xl" />
-                    </h3>
+                    </a>
                 </div>
             </div>
             {/* Jumbotron */}
@@ -213,10 +252,20 @@ function MainPage() {
                             <img src={bootstrap} className="" alt="" />
                         </div>
                     </div>
+                    {/* Curiculum Vitae */}
                     <div className="w-full md:w-2/3 flex justify-center lg:justify-start">
-                        <button className="bg-tertiary-hover hover:brightness-75 duration-500 rounded-lg w-2/3 h-12 m-auto">
+                        <button
+                            disabled={isLoading}
+                            type="button"
+                            onClick={() => handleDownload(biodata?.profile)}
+                            className="bg-tertiary-hover hover:brightness-75 duration-500 rounded-lg w-2/3 h-12 m-auto"
+                        >
                             <h1 className="font-semibold text-lg">
-                                Curiculum Vitae
+                                {isLoading ? (
+                                    <ScaleLoader color="#ffffff" height={16} />
+                                ) : (
+                                    "Curiculum Vitae"
+                                )}
                             </h1>
                         </button>
                     </div>
@@ -236,42 +285,54 @@ function MainPage() {
                 <div className="vector-profile text-center hidden lg:flex">
                     <img className="w-2/3" src={vectorProfile} alt="" />
                 </div>
-                <div className="biodata-profile ">
-                    <h1 className="text-center text-2xl font-bold text-secondary">
-                        Profile
-                    </h1>
-                    <p className="text-justify text-paragraph text-lg p-2.5">
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                        Eligendi architecto, dolor distinctio nostrum id
-                        repudiandae? Impedit ducimus laudantium laboriosam
-                        inventore vero architecto commodi, labore nesciunt natus
-                        deleniti molestiae quo tenetur obcaecati, ipsam maxime
-                        ab doloribus in modi, itaque aliquid similique velit
-                        eveniet voluptatibus. Porro dicta accusantium dolore
-                        itaque ratione modi veniam magnam rem recusandae, vitae
-                        molestias. Consequatur quasi accusantium suscipit amet
-                        ab! Deserunt, sint repudiandae dolore reiciendis
-                        accusantium ullam alias temporibus deleniti doloremque
-                        architecto odit repellendus beatae iste molestiae aut
-                        voluptatibus aliquam distinctio iure optio rem id.
-                        Veniam nulla a, nostrum minima ea vero in! Incidunt
-                        voluptatum consequatur, ipsam sapiente cum numquam est,
-                        quisquam minima sit velit eos aperiam rem molestias
-                        voluptate? Facere eum repudiandae eos, repellendus
-                        quibusdam necessitatibus velit possimus minus, officiis,
-                        distinctio fugit! Animi, dolores deserunt earum dolore
-                        optio dicta quisquam fuga itaque, officia aspernatur
-                        minus quis, asperiores harum temporibus? Maiores commodi
-                        nam doloribus. Alias in, inventore ab tempore possimus
-                        corporis optio iste sunt minima laborum, quos accusamus
-                        ipsum quam obcaecati libero! Quasi explicabo odit
-                        quisquam? Laborum alias quia saepe soluta laboriosam
-                        tempora maiores fugiat blanditiis, quidem a similique
-                        facilis corporis, libero obcaecati, aliquid eum beatae
-                        quo autem quis. Ut sit veritatis ea eaque optio aliquam,
-                        enim voluptatibus!
-                    </p>
-                </div>
+
+                {!biodata.profile?.biodata ? (
+                    <div
+                        role="status"
+                        className="space-y-2.5 animate-pulse max-w-lg"
+                    >
+                        <div className="flex items-center w-full">
+                            <div className="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-32"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-24"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                        </div>
+                        <div className="flex items-center w-full max-w-[480px]">
+                            <div className="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-24"></div>
+                        </div>
+                        <div className="flex items-center w-full max-w-[400px]">
+                            <div className="h-2.5 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-200 rounded-full dark:bg-gray-700 w-80"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                        </div>
+                        <div className="flex items-center w-full max-w-[480px]">
+                            <div className="h-2.5 ms-2 bg-gray-200 rounded-full dark:bg-gray-700 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-24"></div>
+                        </div>
+                        <div className="flex items-center w-full max-w-[440px]">
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-32"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-24"></div>
+                            <div className="h-2.5 ms-2 bg-gray-200 rounded-full dark:bg-gray-700 w-full"></div>
+                        </div>
+                        <div className="flex items-center w-full max-w-[360px]">
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                            <div className="h-2.5 ms-2 bg-gray-200 rounded-full dark:bg-gray-700 w-80"></div>
+                            <div className="h-2.5 ms-2 bg-gray-300 rounded-full dark:bg-gray-600 w-full"></div>
+                        </div>
+                        <span className="sr-only">Loading...</span>
+                    </div>
+                ) : (
+                    <div className="biodata-profile ">
+                        <h1 className="text-center text-2xl font-bold text-secondary">
+                            Profile
+                        </h1>
+                        <p className="text-justify text-paragraph text-lg p-2.5">
+                            {biodata?.profile?.biodata}
+                        </p>
+                    </div>
+                )}
             </section>
             {/* Project */}
             <section
@@ -284,189 +345,87 @@ function MainPage() {
                     </h1>
                     <div className="project-list mt-5 px-5 rounded-xl">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
+                            {biodata.project ? (
+                                biodata?.project?.map((data) => (
+                                    <div
+                                        key={data.id}
+                                        className="card-project border-2 rounded-lg overflow-hidden flex flex-col"
+                                    >
+                                        <div className="image-project overflow-hidden max-h-52 ">
+                                            <img
+                                                src={`${baseStorageURL}/${data.thumbnail}`}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="details-project flex items-center justify-center p-2">
+                                            <p className="text-justify text-paragraph text-lg">
+                                                <label
+                                                    htmlFor=""
+                                                    className="font-bold"
+                                                >
+                                                    {data.title} &nbsp;
+                                                </label>
+                                                {data.description}
+                                            </p>
+                                        </div>
+                                        <div className="action-project grid grid-cols-2 mt-auto">
+                                            {data.linkGithub && (
+                                                <a
+                                                    href={data.linkGithub}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className={`flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover ${
+                                                        data.linkWebsite
+                                                            ? ""
+                                                            : "col-span-2"
+                                                    }`}
+                                                >
+                                                    <FiGithub className="text-xl" />{" "}
+                                                    Github
+                                                </a>
+                                            )}
+                                            {data.linkWebsite && (
+                                                <a
+                                                    href={data.linkWebsite}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className={`flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover ${
+                                                        data.linkGithub
+                                                            ? ""
+                                                            : "col-span-2"
+                                                    }`}
+                                                >
+                                                    <FiGlobe className="text-xl" />{" "}
+                                                    View Page
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div
+                                    role="status"
+                                    className="max-w-sm p-4 border border-gray-200 rounded shadow animate-pulse md:p-6 dark:border-gray-700"
+                                >
+                                    <div className="flex items-center justify-center h-48 mb-4 bg-gray-300 rounded dark:bg-gray-700">
+                                        <svg
+                                            className="w-10 h-10 text-gray-200 dark:text-gray-600"
+                                            aria-hidden="true"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="currentColor"
+                                            viewBox="0 0 16 20"
+                                        >
+                                            <path d="M14.066 0H7v5a2 2 0 0 1-2 2H0v11a1.97 1.97 0 0 0 1.934 2h12.132A1.97 1.97 0 0 0 16 18V2a1.97 1.97 0 0 0-1.934-2ZM10.5 6a1.5 1.5 0 1 1 0 2.999A1.5 1.5 0 0 1 10.5 6Zm2.221 10.515a1 1 0 0 1-.858.485h-8a1 1 0 0 1-.9-1.43L5.6 10.039a.978.978 0 0 1 .936-.57 1 1 0 0 1 .9.632l1.181 2.981.541-1a.945.945 0 0 1 .883-.522 1 1 0 0 1 .879.529l1.832 3.438a1 1 0 0 1-.031.988Z" />
+                                            <path d="M5 5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707A2.98 2.98 0 0 0 .13 5H5Z" />
+                                        </svg>
+                                    </div>
+                                    <div className="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-48 mb-4"></div>
+                                    <div className="h-2 bg-gray-200 rounded-full dark:bg-gray-700 mb-2.5"></div>
+                                    <div className="h-2 bg-gray-200 rounded-full dark:bg-gray-700 mb-2.5"></div>
+                                    <div className="h-2 bg-gray-200 rounded-full dark:bg-gray-700"></div>
                                 </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisicing elit. Excepturi animi beatae
-                                        explicabo similique distinctio, odio
-                                        qui! Dolorum qui in id necessitatibus,
-                                        iure similique nisi laudantium soluta
-                                        nulla. Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisicing elit. Excepturi animi beatae
-                                        explicabo similique distinctio, odio
-                                        qui! Dolorum qui in id necessitatibus,
-                                        iure similique nisi laudantium soluta
-                                        nulla. Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisicing elit. Excepturi animi beatae
-                                        explicabo similique distinctio, odio
-                                        qui! Dolorum qui in id necessitatibus,
-                                        iure similique nisi laudantium soluta
-                                        nulla. Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisisi laudantium soluta nulla.
-                                        Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisicing elit. Excepturi animi beatae
-                                        explicabo similique distinctio, odio
-                                        qui! Dolorum qui in id necessitatibus,
-                                        iure similique nisi laudantium soluta
-                                        nulla. Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="card-project border-2 rounded-lg overflow-hidden flex flex-col">
-                                <div className="image-project overflow-hidden max-h-52 ">
-                                    <img
-                                        src="https://iqbalfaris.my.id/img/project%202.png"
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="details-project flex items-center justify-center p-2">
-                                    <p className="text-justify text-paragraph text-lg">
-                                        <label htmlFor="" className="font-bold">
-                                            NOMADS &nbsp;
-                                        </label>
-                                        Lorem ipsum dolor sit amet consectetur
-                                        adipisicing elit. Excepturi animi beatae
-                                        explicabo similique distinctio, odio
-                                        qui! Dolorum qui in id necessitatibus,
-                                        iure similique nisi laudantium soluta
-                                        nulla. Voluptatum!
-                                    </p>
-                                </div>
-                                <div className="action-project grid grid-cols-2 mt-auto">
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                                        <FiGithub className="text-xl" /> Github
-                                    </button>
-                                    <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                                        <FiGlobe className="text-xl" />
-                                        View Page
-                                    </button>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -476,334 +435,20 @@ function MainPage() {
                 id="contact"
                 className="contact grid grid-cols-1 gap-8 lg:grid-cols-2 mt-36 container p-2 lg:p-0"
             >
-                <div className="biodata-contact">
-                    <h1 className="text-center text-2xl font-bold text-secondary">
-                        Contact
-                    </h1>
-                    <div className="form-input space-y-1 ">
-                        <div className="sm:col-span-4">
-                            <label className="block text-sm font-medium leading-6">
-                                Full name
-                            </label>
-                            <div className="">
-                                <input
-                                    type="text"
-                                    name="full-name"
-                                    id="full-name"
-                                    className="p-2 w-full border rounded-md focus:outline-none focus:ring-orange focus:border-orange"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="sm:col-span-4">
-                            <label className="block text-sm font-medium leading-6 mt-2">
-                                Email address
-                            </label>
-                            <div className="">
-                                <input
-                                    type="email"
-                                    name="email"
-                                    id="email"
-                                    className="p-2 w-full border rounded-md focus:outline-none focus:ring-orange focus:border-orange"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="sm:col-span-4">
-                            <label className="block text-sm font-medium leading-6 mt-2">
-                                Phone number
-                            </label>
-                            <div className="">
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={phoneNumber}
-                                    onChange={handleInputChange}
-                                    className="p-2 w-full border rounded-md focus:outline-none focus:ring-orange focus:border-orange"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="sm:col-span-4">
-                            <label className="block text-sm font-medium leading-6 mt-2">
-                                Message
-                            </label>
-                            <div className="">
-                                <textarea
-                                    id="about"
-                                    name="about"
-                                    rows="3"
-                                    className="p-2 w-full border rounded-md focus:outline-none focus:ring-orange focus:border-orange"
-                                ></textarea>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            className="w-full p-2 duration-300 font-bold bg-tertiary text-white rounded-md hover:bg-tertiary-hover focus:outline-none focus:ring focus:border-tertiary-hover"
-                        >
-                            Submit
-                        </button>
-                    </div>
-                </div>
-                <div className="vector-contact text-center hidden lg:flex items-center justify-center">
-                    <img className="w-2/3" src={vectorContact} alt="" />
-                </div>
+                <Contact />
             </section>
             {/* Connection Reflections */}
             <section
                 id="connection-reflections"
                 className="reflection lg:grid-cols-2 mt-36 container"
             >
-                <div className="heading mb-16">
-                    <h1 className="text-center text-2xl font-bold text-secondary">
-                        Connection Reflections
-                    </h1>
-                    <h1 className="text-center italic text-paragraph font-mono">
-                        Beyond Words, Beyond Bonds – Connection Reflections,
-                        Where Relationships Speak Volumes.
-                    </h1>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 container">
-                    <div className="card-swiper flex m-auto">
-                        <Swiper
-                            effect={"cards"}
-                            grabCursor={true}
-                            autoplay={{
-                                delay: 2000,
-                                disableOnInteraction: false,
-                            }}
-                            modules={[EffectCards, Autoplay]}
-                            className="mySwiper"
-                        >
-                            <SwiperSlide className="text-center rounded-2xl bg-background  border-2 border-orange p-4">
-                                <div className="mx-auto shadow-md rounded-md ">
-                                    {/* Gambar dengan div untuk overflow hidden */}
-                                    <div className="relative overflow-hidden">
-                                        <div className="w-32 h-32 relative mx-auto">
-                                            {/* Div untuk animasi */}
-                                            <div className="w-full h-full rounded-full absolute top-0 left-0 border-2 border-x-tertiary hover:animate-spin"></div>
-
-                                            {/* Gambar */}
-                                            <img
-                                                className="w-full h-full object-cover rounded-full"
-                                                src={photo}
-                                                alt="User Photo"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Informasi nama dan pesan */}
-                                    <div className="p-4">
-                                        <h2 className="text-xl font-bold mb-2">
-                                            Nama User 1
-                                        </h2>
-                                        <p className="text-sm mb-4">
-                                            Lorem ipsum dolor sit amet,
-                                            consectetur adipiscing elit.
-                                            Curabitur sit amet urna ac libero
-                                            sagittis aliquet. Duis tincidunt
-                                            ligula nec efficitur fermentum.
-                                            Vestibulum ante ipsum primis in
-                                            faucibus orci luctus et ultrices
-                                            posuere cubilia Curae; In eu diam
-                                            justo.
-                                        </p>
-
-                                        {/* Social Media */}
-                                        <div className="flex items-center justify-start sm:justify-center space-x-2 running-text">
-                                            <div className="flex items-center">
-                                                <FiGithub className="" />
-                                                <span className="ml-1 text-teal-400">
-                                                    @username
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <FiInstagram className="" />
-                                                <span className="ml-1 text-teal-400">
-                                                    @username
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <FiLinkedin className="" />
-                                                <span className="ml-1 text-teal-400">
-                                                    @username
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <FiTwitter className="" />
-                                                <span className="ml-1 text-teal-400">
-                                                    @username
-                                                </span>
-                                            </div>
-                                            {/* Tambahkan sosial media lainnya jika diperlukan */}
-                                        </div>
-                                    </div>
-                                </div>
-                            </SwiperSlide>
-                        </Swiper>
-                    </div>
-
-                    <div className="form p-2">
-                        <h1 className="text-center font-semibold capitalize text-xl	text-tertiary mt-10 md:mt-0">
-                            Express your views on my personality in Connection
-                            Reflections – your perspective is valuable!
-                        </h1>
-                        {/* max-w-md mx-auto mt-10 p-6 */}
-                        <div className=" rounded-md shadow-md mt-10 border p-6">
-                            {/* Image Input */}
-                            <div className="mb-4 text-center ">
-                                <label
-                                    htmlFor="image"
-                                    className="block text-sm text-left font-medium "
-                                >
-                                    Profile Image (Optional)
-                                </label>
-                                <div className="mt-1 relative rounded-md shadow-sm border">
-                                    <input
-                                        type="file"
-                                        accept=".jpg, .jpeg, .png"
-                                        id="image"
-                                        name="image"
-                                        className="sr-only"
-                                    />
-                                    <label
-                                        htmlFor="image"
-                                        className="cursor-pointer"
-                                    >
-                                        <div className="aspect-w-1 aspect-h-1 rounded-md overflow-hidden">
-                                            <div className="flex items-center justify-center">
-                                                <span className="text-gray-300">
-                                                    <svg
-                                                        className="h-10 w-10 text-gray-300"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth="2"
-                                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                                                        ></path>
-                                                    </svg>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Name Input */}
-                            <div className="mb-4">
-                                <label
-                                    htmlFor="name"
-                                    className="block text-sm font-medium "
-                                >
-                                    Name <label className="text-red">*</label>
-                                </label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    className="mt-1 p-2 w-full border rounded-md"
-                                />
-                            </div>
-
-                            {/* Message Input */}
-                            <div className="mb-4">
-                                <label
-                                    htmlFor="message"
-                                    className="block text-sm font-medium "
-                                >
-                                    Message (Max: 250)
-                                    <label className="text-red"> *</label>
-                                </label>
-                                <textarea
-                                    id="message"
-                                    name="message"
-                                    rows="4"
-                                    className="mt-1 p-2 w-full border rounded-md"
-                                ></textarea>
-                            </div>
-
-                            {/* Social Media Inputs */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                                <div className="flex items-center space-x-2">
-                                    <FiInstagram className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="instagram"
-                                        name="instagram"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="Instagram Username"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <RiTiktokLine className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="tiktok"
-                                        name="tiktok"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="TikTok Username"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <FiTwitter className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="twitter"
-                                        name="twitter"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="Twitter Username"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <FiLinkedin className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="linkedin"
-                                        name="linkedin"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="LinkedIn Username"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <FiGithub className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="github"
-                                        name="github"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="GitHub Username"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <FiFacebook className="text-2xl" />
-                                    <input
-                                        type="text"
-                                        id="facebook"
-                                        name="facebook"
-                                        className="p-2 border rounded-md flex-grow"
-                                        placeholder="Facebook Username"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Submit Button */}
-                            <button
-                                type="button"
-                                className="w-full p-2 duration-300 font-bold bg-tertiary text-white rounded-md hover:bg-tertiary-hover focus:outline-none focus:ring focus:border-tertiary-hover"
-                            >
-                                Submit
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConnectionRefl
+                    fetchPortfolio={fetchPortfolio}
+                    biodata={biodata}
+                    baseStorageURL={baseStorageURL}
+                />
             </section>
-
+            {/* Footer */}
             <footer className="w-full capitalize flex items-center justify-center mt-24 bg-deep-blue">
                 <FiCode />
                 &nbsp;
@@ -818,7 +463,7 @@ function MainPage() {
                     </a>{" "}
                 </label>
             </footer>
-
+            {/* Back to top */}
             <button
                 onClick={scrollToTop}
                 className={`fixed bottom-4 right-4 p-3 bg-blue text-white rounded-full shadow-md transition-all duration-300 ${

@@ -41,7 +41,7 @@ class ProjectController extends Controller
             return response()->json($validator->errors(), 422);
         }
         $project = Project::create([
-            'thumbnail' => $request->file('thumbnail')->store(),
+            'thumbnail' => $request->file('thumbnail')->store('document', 'public'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'linkGithub' => $request->input('linkGithub'),

@@ -13,9 +13,9 @@ class BiodataController extends Controller
     public function store(Request $request)
     {
         $biodata = Biodata::create([
-            'profileImage' => $request->file('profileImage')->store(),
+            'profileImage' => $request->file('profileImage')->store('document', 'public'),
             'biodata' => $request->input('biodata'),
-            'curiculumVitae' => $request->file('curiculumVitae')->store(),
+            'curiculumVitae' => $request->file('curiculumVitae')->store('document', 'public'),
             'socialMedia' => json_decode($request->input('socialMedia'))
         ]);
 
@@ -59,7 +59,7 @@ class BiodataController extends Controller
                     Storage::delete($biodata->profileImage);
                 }
                 // Simpan file baru
-                $data['profileImage'] = $request->file('profileImage')->store();
+                $data['profileImage'] = $request->file('profileImage')->store('document', 'public');
             }
 
             // Cek apakah file curiculumVitae ada pada request
@@ -69,7 +69,7 @@ class BiodataController extends Controller
                     Storage::delete($biodata->curiculumVitae);
                 }
                 // Simpan file baru
-                $data['curiculumVitae'] = $request->file('curiculumVitae')->store();
+                $data['curiculumVitae'] = $request->file('curiculumVitae')->store('document', 'public');
             }
 
             // Simpan data ke model Biodata

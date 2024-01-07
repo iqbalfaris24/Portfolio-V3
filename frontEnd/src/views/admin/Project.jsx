@@ -38,93 +38,8 @@ export default function Project() {
     };
 
     const handleEdit = (data) => {
+        setOpenModal(true);
         setFormUpdate(data);
-        let formUpdate = data;
-        MySwal.fire({
-            title: "Update Project",
-            html: (
-                <div className="form-update">
-                    <div className="image mb-4">
-                        <label className="block text-start text-sm font-bold mb-2">
-                            Project Image:
-                        </label>
-                        <input
-                            type="file"
-                            name="projectImage"
-                            onChange={handleChange}
-                        />
-                    </div>
-                    <div className="title mb-4">
-                        <label className="block text-start text-sm font-bold mb-2">
-                            Project Title:
-                        </label>
-                        <div className="flex items-center justify-between">
-                            <input
-                                type="text"
-                                className="shadow appearance-none border border-blue rounded w-full py-2 px-3 text- leading-tight focus:outline-none focus:shadow-outline"
-                                name="projectTitle"
-                                defaultValue={formUpdate.projectTitle}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-start text-sm font-bold mb-2">
-                            Project Description:
-                        </label>
-                        <div className="flex items-center justify-between">
-                            <input
-                                type="text"
-                                className="shadow appearance-none border border-blue rounded w-full py-2 px-3 text- leading-tight focus:outline-none focus:shadow-outline"
-                                name="projectDescription"
-                                defaultValue={formUpdate.projectDescription}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-start text-sm font-bold mb-2">
-                            Project Github Link:
-                        </label>
-                        <div className="flex items-center justify-between">
-                            <input
-                                type="text"
-                                className="shadow appearance-none border border-blue rounded w-full py-2 px-3 text- leading-tight focus:outline-none focus:shadow-outline"
-                                name="projectGithubLink"
-                                defaultValue={formUpdate.projectGithubLink}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-start text-sm font-bold mb-2">
-                            Project Website Link:
-                        </label>
-                        <div className="flex items-center justify-between">
-                            <input
-                                type="text"
-                                className="shadow appearance-none border border-blue rounded w-full py-2 px-3 text- leading-tight focus:outline-none focus:shadow-outline"
-                                name="projectWebLink"
-                                defaultValue={formUpdate.projectWebLink}
-                                onChange={handleChange}
-                            />
-                        </div>
-                    </div>
-                </div>
-            ),
-            showCancelButton: true,
-            confirmButtonColor: "#3085d6",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Update",
-        }).then((result) => {
-            if (result.isConfirmed) {
-                MySwal.fire({
-                    title: "Updated!",
-                    text: "Your file has been Updated.",
-                    icon: "success",
-                });
-            }
-        });
     };
 
     const handleDelete = (data) => {
@@ -136,8 +51,10 @@ export default function Project() {
             confirmButtonColor: "#3085d6",
             cancelButtonColor: "#d33",
             confirmButtonText: "Yes, delete it!",
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
+                const response = await Api.delete(`/project/${data.id}`);
+                fetchProject();
                 MySwal.fire({
                     title: "Deleted!",
                     text: "Project has been deleted.",
@@ -147,14 +64,27 @@ export default function Project() {
         });
     };
 
-    const handleAdd = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             setIsLoading(true);
-            const response = await Api.post("/project", formUpdate);
+            if (formUpdate.id) {
+                const response = await Api.post(
+                    `/project/${formUpdate.id}`,
+                    formUpdate,
+                    {
+                        params: {
+                            _method: "put",
+                        },
+                    }
+                );
+            } else {
+                const response = await Api.post("/project", formUpdate);
+            }
             fetchProject();
             setIsLoading(false);
             setOpenModal(false);
+            setFormUpdate({});
         } catch (error) {
             setIsLoading(false);
             console.error("Error fetching data:", error);
@@ -164,11 +94,7 @@ export default function Project() {
     const Card = (data) => (
         <div className="card-project h-full flex flex-col">
             <div className="image-project overflow-hidden max-h-52">
-                <img
-                    src=""
-                    // src={`${baseStorageURL}/${data.data.thumbnail}`}
-                    className="w-full h-full object-cover"
-                />
+                <img src={`${baseStorageURL}/${data.data.thumbnail}`} alt="" />
             </div>
             <div className="details-project p-2 flex-1">
                 <p className="text-justify text-paragraph text-lg">
@@ -177,15 +103,6 @@ export default function Project() {
                     </label>
                     {data.data.description}
                 </p>
-            </div>
-            <div className="action-project grid grid-cols-2">
-                <button className="flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover">
-                    <FiGithub className="text-xl" /> Github
-                </button>
-                <button className="flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover">
-                    <FiGlobe className="text-xl" />
-                    View Page
-                </button>
             </div>
 
             {/* Edit and Delete Buttons */}
@@ -210,26 +127,26 @@ export default function Project() {
         </div>
     );
 
-    const fetchProject = async () => {
+    const fetchProject = async (e) => {
         try {
             const response = await Api.get("/project");
-            console.log(response);
-
             setFormData(response.data.project);
         } catch (error) {
             console.error("Error fetching data:", error);
         }
     };
 
-    useEffect(() => {
-        fetchProject();
+    useEffect((e) => {
+        fetchProject(e);
     }, []);
     return (
         <div className="project-page overflow-hidden">
             <Modal
                 dismissible
                 show={openModal}
-                onClose={() => setOpenModal(false)}
+                onClose={() => {
+                    setOpenModal(false), setFormUpdate({});
+                }}
             >
                 <Modal.Body className="bg-deep-blue border rounded-xl">
                     <div className="form-update ">
@@ -307,7 +224,7 @@ export default function Project() {
                         </div>
                     </div>
                     <div className="flex gap-4 justify-end">
-                        <Button onClick={(e) => handleAdd(e)}>
+                        <Button onClick={(e) => handleSubmit(e)}>
                             {isLoading ? <ScaleLoader height={14} /> : "Submit"}
                         </Button>
                         <Button
@@ -321,9 +238,9 @@ export default function Project() {
                     </div>
                 </Modal.Body>
             </Modal>
-            <div className=" mt-12 container grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+            <div className="mt-12 container grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
                 <div
-                    className="relative border-2 rounded-lg overflow-hidden flex items-center justify-center shadow-md cursor-pointer bg-blue hover:brightness-75"
+                    className="rounded-lg relative border-2 overflow-hidden flex items-center justify-center shadow-md cursor-pointer bg-blue hover:brightness-75"
                     onClick={() => setOpenModal(true)}
                 >
                     <FiPlus className="text-2xl" />
@@ -331,11 +248,41 @@ export default function Project() {
                 {formData?.map((data) => (
                     <div
                         key={data.id}
-                        className="relative border-2 rounded-lg overflow-hidden flex flex-col shadow-md cursor-pointer "
-                        onMouseEnter={() => handleHover(data.id)}
-                        onMouseLeave={() => handleHover(null)}
+                        className="flex flex-wrap border-2 rounded-lg overflow-hidden"
                     >
-                        <Card data={data} />
+                        <div
+                            className="relative overflow-hidden flex flex-col shadow-md cursor-pointer "
+                            onMouseEnter={() => handleHover(data.id)}
+                            onMouseLeave={() => handleHover(null)}
+                        >
+                            <Card data={data} />
+                        </div>
+                        <div className="action-project grid grid-cols-2 w-full">
+                            {data.linkGithub && (
+                                <a
+                                    href={data.linkGithub}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`flex flex-col items-center p-1 duration-300 bg-tertiary hover:bg-tertiary-hover ${
+                                        data.linkWebsite ? "" : "col-span-2"
+                                    }`}
+                                >
+                                    <FiGithub className="text-xl" /> Github
+                                </a>
+                            )}
+                            {data.linkWebsite && (
+                                <a
+                                    href={data.linkWebsite}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`flex flex-col items-center p-1 duration-300 bg-orange hover:bg-orange-hover ${
+                                        data.linkGithub ? "" : "col-span-2"
+                                    }`}
+                                >
+                                    <FiGlobe className="text-xl" /> View Page
+                                </a>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>

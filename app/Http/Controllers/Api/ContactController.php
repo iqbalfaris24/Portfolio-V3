@@ -13,8 +13,8 @@ class ContactController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
             'name' => 'required',
+            'email' => 'required|email',
             'phoneNumber' => 'required',
             'message' => 'required',
         ]);
